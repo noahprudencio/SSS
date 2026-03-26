@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSS Contribution Penalty Calculator</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 40px; background-color: #f4f7f6; }
+        .card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        
+        .logo-container { margin-bottom: 20px; }
+        .sss-logo { height: 80px; width: auto; }
+        
+        h2 { color: #0038a8; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 15px; font-size: 1.4rem; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input:focus { outline: none; border-color: #0038a8; box-shadow: 0 0 0 2px rgba(0,56,168,0.1); }
+        
+        button { width: 100%; padding: 14px; background-color: #0038a8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; transition: background 0.3s; }
+        button:hover { background-color: #002673; }
+        
+        #results { margin-top: 25px; padding: 15px; background: #f0f4f8; border-radius: 8px; display: none; text-align: left; border: 1px solid #d1d9e6; }
+        .result-line { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #444; }
+        .total { font-weight: bold; font-size: 18px; color: #d9534f; border-top: 2px solid #d1d9e6; padding-top: 10px; margin-top: 10px; }
+
+        /* Contact Info Styles - Updated to remove ALL CAPS */
+        .contact-info { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: left; }
+        .contact-header { font-size: 1.05rem; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .contact-detail { font-size: 0.9rem; color: #666; margin-bottom: 5px; display: flex; align-items: center; }
+        .contact-detail strong { color: #333; width: 60px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="logo-container">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Social_Security_System_%28SSS%29.svg" alt="SSS Logo" class="sss-logo">
+    </div>
+
+    <h2>Contribution Penalty Calculator</h2>
+    
+    <div class="form-group">
+        <label>Month (1-12)</label>
+        <input type="number" id="month" min="1" max="12" placeholder="e.g. 3">
+    </div>
+    <div class="form-group">
+        <label>Year</label>
+        <input type="number" id="year" placeholder="e.g. 2026">
+    </div>
+    <div class="form-group">
+        <label>Amount (PHP)</label>
+        <input type="number" id="amount" step="0.01" placeholder="0.00">
+    </div>
+    <button onclick="calculatePenalty()">Calculate Total</button>
+
+    <div id="results">
+        <div class="result-line"><span>Deadline:</span> <span id="resDeadline" style="font-weight:600;"></span></div>
+        <div class="result-line"><span>Months Late:</span> <span id="resMonths"></span></div>
+        <div class="result-line"><span>Principal:</span> <span id="resPrincipal"></span></div>
+        <div class="result-line"><span>Penalty (2%):</span> <span id="resPenalty"></span></div>
+        <div class="total result-line"><span>TOTAL DUE:</span> <span id="resTotal"></span></div>
+    </div>
+
+    <div class="contact-info">
+        <div class="contact-header">Contact Information</div>
+        <div class="contact-detail">Terry Cruz</div>
+        <div class="contact-detail">SSS Legarda Branch</div>
+    </div>
+</div>
+
+<script>
+function calculatePenalty() {
+    const month = parseInt(document.getElementById('month').value);
+    const year = parseInt(document.getElementById('year').value);
+    const principal = parseFloat(document.getElementById('amount').value);
+
+    if (isNaN(month) || isNaN(year) || isNaN(principal)) {
+        alert("Please fill in all fields correctly.");
+        return;
+    }
+
+    const deadline = new Date(year, month, 10); 
+    const today = new Date();
+    let monthsOverdue = 0;
+    let penaltyAmount = 0;
+
+    if (today > deadline) {
+        monthsOverdue = (today.getFullYear() - deadline.getFullYear()) * 12 + (today.getMonth() - deadline.getMonth());
+        
+        if (today.getDate() < 10) {
+            monthsOverdue--;
+        }
+
+        if (monthsOverdue < 1) monthsOverdue = 1;
+        penaltyAmount = principal * 0.02 * monthsOverdue;
+    }
+
+    const totalDue = principal + penaltyAmount;
+
+    document.getElementById('resDeadline').innerText = deadline.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('resMonths').innerText = monthsOverdue;
+    document.getElementById('resPrincipal').innerText = '₱' + principal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('resPenalty').innerText = '₱' + penaltyAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('resTotal').innerText = '₱' + totalDue.toLocaleString(undefined, {minimumFractionDigits: 2});
+    
+    document.getElementById('results').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
