@@ -13,7 +13,21 @@
         
         h2 { color: #0038a8; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 15px; font-size: 1.4rem; }
         
-        .input-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
+        .payment-date-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; 
+            gap: 15px; 
+            margin-bottom: 25px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            border: 1px solid #dee2e6;
+        }
+        .payment-date-row label { font-weight: bold; color: #333; font-size: 0.9rem; }
+        .payment-date-row input { width: 200px; }
+
+        .input-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: left; }
         .input-table th { background-color: #f8f9fa; color: #555; padding: 10px; border-bottom: 2px solid #dee2e6; font-size: 0.8rem; text-transform: uppercase; }
         .input-table td { padding: 8px; border-bottom: 1px solid #eee; }
         
@@ -23,8 +37,12 @@
         .btn-add { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; margin-top: 15px; float: left; font-weight: bold; }
         .btn-add:hover { background-color: #218838; }
         
-        .btn-calc { background-color: #0038a8; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 25px; width: 100%; transition: background 0.3s; }
+        .button-group { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-calc { background-color: #0038a8; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; flex: 2; transition: background 0.3s; }
         .btn-calc:hover { background-color: #002673; }
+        
+        .btn-print { background-color: #6c757d; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; flex: 1; display: none; }
+        .btn-print:hover { background-color: #5a6268; }
         
         .btn-remove { background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
@@ -40,6 +58,15 @@
         .contact-info { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: left; }
         .contact-header { font-size: 1.05rem; font-weight: bold; color: #333; margin-bottom: 5px; }
         .contact-detail { font-size: 0.9rem; color: #666; margin-bottom: 3px; line-height: 1.4; }
+
+        @media print {
+            body { background-color: white; padding: 0; }
+            .card { box-shadow: none; max-width: 100%; padding: 0; }
+            .btn-add, .btn-remove, .button-group, .input-table, .logo-container, .payment-date-row { display: none !important; }
+            #breakdownSection { display: block !important; margin-top: 0; }
+            h2 { font-size: 1.2rem; }
+            .breakdown-table th { background-color: #eee !important; color: black !important; border: 1px solid #ccc; }
+        }
     </style>
 </head>
 <body>
@@ -50,6 +77,11 @@
     </div>
 
     <h2>SSS Contribution Penalty Calculator</h2>
+
+    <div class="payment-date-row">
+        <label for="paymentDateInput">Date of Payment:</label>
+        <input type="date" id="paymentDateInput">
+    </div>
     
     <table class="input-table">
         <thead>
@@ -75,7 +107,10 @@
     <button class="btn-add" onclick="addRow()">+ Add Month</button>
     <div style="clear: both;"></div>
 
-    <button class="btn-calc" onclick="calculateMultiPenalty()">Calculate Breakdown & Total</button>
+    <div class="button-group">
+        <button class="btn-calc" onclick="calculateMultiPenalty()">Calculate Breakdown & Total</button>
+        <button id="btnPrint" class="btn-print" onclick="window.print()">Print Breakdown</button>
+    </div>
 
     <div id="breakdownSection">
         <h3>Detailed Breakdown</h3>
@@ -101,7 +136,7 @@
             <div class="summary-line">Total SS Penalty (2%): <span id="totalPenalty">₱0.00</span></div>
             <div class="summary-line">Total EC Principal: <span id="totalECPrincipal">₱0.00</span></div>
             <div class="summary-line">Total EC Penalty (2%): <span id="totalECPenalty">₱0.00</span></div>
-            <div class="total-due">Total Due as of <span id="todayDate"></span>: <span id="grandTotal">₱0.00</span></div>
+            <div class="total-due">Date of Payment as of <span id="paymentDateDisplay"></span>: <span id="grandTotal">₱0.00</span></div>
         </div>
     </div>
 
@@ -129,15 +164,26 @@ function addRow() {
 }
 
 function calculateMultiPenalty() {
+    const paymentDateValue = document.getElementById('paymentDateInput').value;
+    
+    if (!paymentDateValue) {
+        alert("Please enter a Date of Payment.");
+        document.getElementById('paymentDateInput').focus();
+        return;
+    }
+
+    const calcDate = new Date(paymentDateValue);
+    // Set to end of day to ensure "on the due date" counts as not late
+    calcDate.setHours(23, 59, 59, 999);
+
     const months = document.getElementsByClassName('month-input');
     const years = document.getElementsByClassName('year-input');
     const amounts = document.getElementsByClassName('amount-input');
     const ecAmounts = document.getElementsByClassName('ec-amount-input');
     const breakdownBody = document.getElementById('breakdownBody');
-    const today = new Date();
     
     const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    document.getElementById('todayDate').innerText = today.toLocaleDateString(undefined, dateOptions);
+    document.getElementById('paymentDateDisplay').innerText = new Date(paymentDateValue).toLocaleDateString(undefined, dateOptions);
     
     breakdownBody.innerHTML = ''; 
     
@@ -156,21 +202,22 @@ function calculateMultiPenalty() {
         if (isNaN(m) || isNaN(y) || (principal === 0 && ecPrincipal === 0)) continue;
         validRows++;
 
+        // Deadline is end of next month (e.g., March contrib due April 30)
         const deadline = new Date(y, m + 1, 0);
+        deadline.setHours(23, 59, 59, 999);
+        
         const dueDateString = deadline.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
         
         let monthsOverdue = 0;
         let penaltyForThisRow = 0;
         let ecPenaltyForThisRow = 0;
 
-        if (today > deadline) {
-            monthsOverdue = (today.getFullYear() - deadline.getFullYear()) * 12 + (today.getMonth() - deadline.getMonth());
+        // ONLY calculate penalty if payment is strictly AFTER the deadline
+        if (calcDate > deadline) {
+            monthsOverdue = (calcDate.getFullYear() - deadline.getFullYear()) * 12 + (calcDate.getMonth() - deadline.getMonth());
             
-            if (today.getDate() < deadline.getDate() && today.getMonth() === deadline.getMonth() && today.getFullYear() === deadline.getFullYear()) {
-                monthsOverdue = 0;
-            }
-            
-            if (monthsOverdue < 1 && today > deadline) monthsOverdue = 1;
+            // If it's the same month but technically after deadline (e.g., May 1st for April 30th deadline)
+            if (monthsOverdue < 1) monthsOverdue = 1;
             
             penaltyForThisRow = principal * 0.02 * monthsOverdue;
             ecPenaltyForThisRow = ecPrincipal * 0.02 * monthsOverdue;
@@ -199,7 +246,7 @@ function calculateMultiPenalty() {
     }
 
     if (validRows === 0) {
-        alert("Please fill in at least one row.");
+        alert("Please fill in at least one row of contributions.");
         return;
     }
 
@@ -212,6 +259,7 @@ function calculateMultiPenalty() {
     document.getElementById('grandTotal').innerText = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
     
     document.getElementById('breakdownSection').style.display = 'block';
+    document.getElementById('btnPrint').style.display = 'block';
     document.getElementById('breakdownSection').scrollIntoView({ behavior: 'smooth' });
 }
 </script>
