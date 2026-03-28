@@ -6,14 +6,13 @@
     <title>SSS Contribution Penalty Calculator</title>
     <style>
         body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; background-color: #f4f7f6; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 750px; text-align: center; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 950px; text-align: center; }
         
         .logo-container { margin-bottom: 20px; }
         .sss-logo { height: 60px; width: auto; }
         
         h2 { color: #0038a8; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 15px; font-size: 1.4rem; }
         
-        /* Input Table Styles */
         .input-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
         .input-table th { background-color: #f8f9fa; color: #555; padding: 10px; border-bottom: 2px solid #dee2e6; font-size: 0.8rem; text-transform: uppercase; }
         .input-table td { padding: 8px; border-bottom: 1px solid #eee; }
@@ -29,15 +28,13 @@
         
         .btn-remove { background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Breakdown Table Styles */
         #breakdownSection { margin-top: 30px; display: none; text-align: left; }
-        .breakdown-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        .breakdown-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.82rem; }
         .breakdown-table th { background-color: #0038a8; color: white; padding: 10px; border: 1px solid #002673; }
         .breakdown-table td { padding: 10px; border: 1px solid #ddd; text-align: center; }
 
         #resultsSummary { padding: 20px; background: #f0f4f8; border-radius: 8px; text-align: right; border: 1px solid #d1d9e6; }
         .summary-line { margin-bottom: 8px; font-size: 15px; color: #444; }
-        /* Removed text-transform: uppercase to allow mixed case */
         .total-due { font-weight: bold; font-size: 20px; color: #d9534f; border-top: 2px solid #d1d9e6; padding-top: 10px; margin-top: 10px; }
 
         .contact-info { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: left; }
@@ -57,9 +54,10 @@
     <table class="input-table">
         <thead>
             <tr>
-                <th style="width: 20%;">Month (1-12)</th>
-                <th style="width: 20%;">Year</th>
-                <th style="width: 50%;">Amount (PHP)</th>
+                <th style="width: 12%;">Month (1-12)</th>
+                <th style="width: 12%;">Year</th>
+                <th style="width: 33%;">SS Amount (PHP)</th>
+                <th style="width: 33%;">EC Amount (PHP)</th>
                 <th style="width: 10%;"></th>
             </tr>
         </thead>
@@ -68,6 +66,7 @@
                 <td><input type="number" class="month-input" min="1" max="12" placeholder="e.g. 3"></td>
                 <td><input type="number" class="year-input" placeholder="2026"></td>
                 <td><input type="number" class="amount-input" step="0.01" placeholder="0.00"></td>
+                <td><input type="number" class="ec-amount-input" step="0.01" placeholder="0.00"></td>
                 <td></td>
             </tr>
         </tbody>
@@ -85,9 +84,12 @@
                 <tr>
                     <th>Month</th>
                     <th>Year</th>
+                    <th>Due Date</th>
                     <th>Months Late</th>
-                    <th>Amount</th>
-                    <th>Penalty</th>
+                    <th>SS Amount</th>
+                    <th>SS Penalty</th>
+                    <th>EC Amount</th>
+                    <th>EC Penalty</th>
                     <th>Total</th>
                 </tr>
             </thead>
@@ -95,8 +97,10 @@
         </table>
 
         <div id="resultsSummary">
-            <div class="summary-line">Total Principal: <span id="totalPrincipal">₱0.00</span></div>
-            <div class="summary-line">Total Penalty (2%): <span id="totalPenalty">₱0.00</span></div>
+            <div class="summary-line">Total SS Principal: <span id="totalPrincipal">₱0.00</span></div>
+            <div class="summary-line">Total SS Penalty (2%): <span id="totalPenalty">₱0.00</span></div>
+            <div class="summary-line">Total EC Principal: <span id="totalECPrincipal">₱0.00</span></div>
+            <div class="summary-line">Total EC Penalty (2%): <span id="totalECPenalty">₱0.00</span></div>
             <div class="total-due">Total Due as of <span id="todayDate"></span>: <span id="grandTotal">₱0.00</span></div>
         </div>
     </div>
@@ -118,6 +122,7 @@ function addRow() {
         <td><input type="number" class="month-input" min="1" max="12" placeholder="e.g. 3"></td>
         <td><input type="number" class="year-input" placeholder="2026"></td>
         <td><input type="number" class="amount-input" step="0.01" placeholder="0.00"></td>
+        <td><input type="number" class="ec-amount-input" step="0.01" placeholder="0.00"></td>
         <td><button class="btn-remove" onclick="this.parentElement.parentElement.remove()">✕</button></td>
     `;
     tbody.appendChild(row);
@@ -127,10 +132,10 @@ function calculateMultiPenalty() {
     const months = document.getElementsByClassName('month-input');
     const years = document.getElementsByClassName('year-input');
     const amounts = document.getElementsByClassName('amount-input');
+    const ecAmounts = document.getElementsByClassName('ec-amount-input');
     const breakdownBody = document.getElementById('breakdownBody');
     const today = new Date();
     
-    // Set the "As of" date in the results
     const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('todayDate').innerText = today.toLocaleDateString(undefined, dateOptions);
     
@@ -138,40 +143,56 @@ function calculateMultiPenalty() {
     
     let totalPrincipal = 0;
     let totalPenalty = 0;
+    let totalECPrincipal = 0;
+    let totalECPenalty = 0;
     let validRows = 0;
 
     for (let i = 0; i < months.length; i++) {
         const m = parseInt(months[i].value);
         const y = parseInt(years[i].value);
-        const principal = parseFloat(amounts[i].value);
+        const principal = parseFloat(amounts[i].value) || 0;
+        const ecPrincipal = parseFloat(ecAmounts[i].value) || 0;
 
-        if (isNaN(m) || isNaN(y) || isNaN(principal)) continue;
+        if (isNaN(m) || isNaN(y) || (principal === 0 && ecPrincipal === 0)) continue;
         validRows++;
 
-        const deadline = new Date(y, m, 10);
+        const deadline = new Date(y, m + 1, 0);
+        const dueDateString = deadline.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        
         let monthsOverdue = 0;
         let penaltyForThisRow = 0;
+        let ecPenaltyForThisRow = 0;
 
         if (today > deadline) {
             monthsOverdue = (today.getFullYear() - deadline.getFullYear()) * 12 + (today.getMonth() - deadline.getMonth());
-            if (today.getDate() < 10) monthsOverdue--;
-            if (monthsOverdue < 1) monthsOverdue = 1;
+            
+            if (today.getDate() < deadline.getDate() && today.getMonth() === deadline.getMonth() && today.getFullYear() === deadline.getFullYear()) {
+                monthsOverdue = 0;
+            }
+            
+            if (monthsOverdue < 1 && today > deadline) monthsOverdue = 1;
             
             penaltyForThisRow = principal * 0.02 * monthsOverdue;
+            ecPenaltyForThisRow = ecPrincipal * 0.02 * monthsOverdue;
         }
 
-        const subtotal = principal + penaltyForThisRow;
+        const subtotal = principal + penaltyForThisRow + ecPrincipal + ecPenaltyForThisRow;
         totalPrincipal += principal;
         totalPenalty += penaltyForThisRow;
+        totalECPrincipal += ecPrincipal;
+        totalECPenalty += ecPenaltyForThisRow;
 
         const row = document.createElement('tr');
         const monthName = new Date(y, m - 1).toLocaleString('default', { month: 'short' });
         row.innerHTML = `
             <td>${monthName}</td>
             <td>${y}</td>
+            <td>${dueDateString}</td>
             <td>${monthsOverdue}</td>
             <td>₱${principal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
             <td>₱${penaltyForThisRow.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>₱${ecPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>₱${ecPenaltyForThisRow.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
             <td><strong>₱${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
         `;
         breakdownBody.appendChild(row);
@@ -182,10 +203,12 @@ function calculateMultiPenalty() {
         return;
     }
 
-    const grandTotal = totalPrincipal + totalPenalty;
+    const grandTotal = totalPrincipal + totalPenalty + totalECPrincipal + totalECPenalty;
 
     document.getElementById('totalPrincipal').innerText = '₱' + totalPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2});
     document.getElementById('totalPenalty').innerText = '₱' + totalPenalty.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('totalECPrincipal').innerText = '₱' + totalECPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('totalECPenalty').innerText = '₱' + totalECPenalty.toLocaleString(undefined, {minimumFractionDigits: 2});
     document.getElementById('grandTotal').innerText = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
     
     document.getElementById('breakdownSection').style.display = 'block';
